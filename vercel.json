@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd artifacts/wardrobe-pwa && pnpm install && pnpm run build",
-  "outputDirectory": "artifacts/wardrobe-pwa/dist",
+  "buildCommand": "cd artifacts/wardrobe-pwa && PORT=3000 BASE_PATH=/ pnpm run build",
+  "outputDirectory": "artifacts/wardrobe-pwa/dist/public",
   "installCommand": "pnpm install --frozen-lockfile"
 }

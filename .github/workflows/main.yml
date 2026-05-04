@@ -1,0 +1,7 @@
+# Create .github/workflows directory if it doesn't exist
+mkdir -p .github/workflows
+
+# Copy the typecheck.yml and lint.yml content into those files
+git add .github/workflows/
+git commit -m "Add GitHub Actions CI/CD workflows"
+git push origin main

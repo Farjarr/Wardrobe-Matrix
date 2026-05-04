@@ -1,0 +1,53 @@
+I have a single HTML file — a wardrobe outfit builder with a 
+color balance checker. Here is the current known issue:
+
+CONTEXT:
+The file has a checkBalance() function that reads outfit pieces 
+from a state object: state.inner, state.outer, state.bottom, 
+state.shoe, state.sock, state.acc
+
+It categorizes colors using three keyword arrays:
+
+BOLD_COLORS: red, blue, green, yellow, orange, purple, pink, 
+teal, turquoise, cyan, aqua, magenta, fuchsia, violet, indigo, 
+maroon, burgundy, crimson, scarlet, coral, salmon, peach, 
+mustard, gold, amber, lime, chartreuse, cobalt, azure, cerulean, 
+sapphire, neon, bright, electric, fluorescent, vivid, bold, 
+hot pink, rose, raspberry, tangerine, pumpkin, emerald, jade, 
+ultramarine
+
+DARK_COLORS: black, dark, charcoal, navy, deep
+
+EARTH_COLORS: olive, brown, beige, sand, cream, tan, khaki, 
+terracotta, rust, camel, warm, grey, gray, white
+
+KNOWN BUGS:
+1. "white" is in EARTH_COLORS — so "White tee" always reads 
+as earth/neutral and never triggers bold checks even when 
+paired with multiple bold pieces
+
+2. boldCount === 2 check with an outer layer present — if the 
+outer is bold but not dark, it currently falls through to the 
+earth tone check and returns "good to go" incorrectly
+
+3. state.shoe is included in countBoldPieces() but the shoe 
+field accepts free text like "Red sneakers" — needs to be 
+consistently checked across all balance logic
+
+4. The concept label (getConcept) doesn't update correctly 
+when custom "Other" text is typed — it often returns 
+"Layered earth tone" as a fallback even for clearly 
+wrong combos
+
+WHAT I WANT:
+- If ANY piece (inner, outer, bottom, shoe) contains a bold 
+color, the checker should catch it
+- "white" should be neutral/safe, not treated as earth tone 
+for balance purposes — it should not override bold detection 
+in other pieces
+- The concept label should reflect the actual colors used, 
+not just fall back to a generic label
+- Warning messages should be specific — tell me which piece 
+is the problem and what to do about it
+- "Good to go" should only appear when ALL pieces are 
+confirmed neutral/earth/dark toned

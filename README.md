@@ -1,61 +1,103 @@
 # Wardrobe Matrix
 
-An interactive outfit builder and color balance checker built with vanilla HTML, CSS, and JavaScript.
+An interactive outfit builder and color balance checker built with vanilla HTML, CSS, and JavaScript. Plan your looks using Korean fashion principles, then generate Leonardo AI prompts to visualize them.
 
-## What it does
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/language-TypeScript-blue.svg)](https://www.typescriptlang.org/)
+[![GitHub Pages](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://farjarr.github.io/Wardrobe-Matrix/)
 
-Select pieces from your wardrobe — inner top, outer layer, bottom, shoes, and accessories — and the app builds your outfit combination in real time. It also checks whether your color choices are balanced using Korean fashion principles, and generates a ready-to-use Leonardo AI prompt so you can visualize the look.
+## ✨ Features
 
-## Features
+- **Mix and Match Selector** — Choose from preset wardrobe pieces or add custom items for every category (inner top, outer layer, bottom, shoes, accessories)
+- **Smart Color Balance Checker** — Detects bold, dark, and earth tone colors; flags clashing combinations with specific feedback
+- **Korean Fashion Concepts** — Auto-labels outfits with relevant styling principles (Tone on Tone, WI, Go, Pan, Pointing Down, Damin Look, etc.)
+- **Leonardo AI Prompt Generator** — Auto-generates a copyable prompt based on your selected outfit
+- **One-Click Copy** — Instantly copy the prompt to paste into Leonardo AI
 
-- **Mix and match selector** — click preset wardrobe pieces or type your own in the "Other" field for every category
-- **Color balance checker** — detects bold, dark, and earth tone colors across all pieces and flags clashing combinations with specific feedback
-- **Korean fashion concepts** — each combo is labeled with the relevant concept (Tone on Tone, WI, Go, Pan, Pointing Down, Damin Look, etc.)
-- **Leonardo AI prompt generator** — auto-builds a copyable prompt based on your selected outfit, ready to paste into Leonardo AI
-- **One-click copy** — copy the prompt instantly with a single button
-
-## How to use
+## 🚀 Quick Start
 
 1. Open `index.html` in any browser — no setup or dependencies needed
 2. Select one piece per category, or type a custom piece in the Other field and hit **Use this**
 3. Your outfit combo, concept label, and balance check appear instantly
-4. Copy the Leonardo AI prompt at the bottom to visualize the look
+4. Copy the Leonardo AI prompt to visualize the look
 
-## Color balance logic
+## 🎨 Color Balance Logic
 
-The checker categorizes every piece by scanning for color keywords across three lists:
+The app categorizes every piece by scanning for color keywords:
 
-- **Bold** — red, blue, green, yellow, orange, purple, pink, teal, emerald, coral, mustard, and more
-- **Dark** — black, charcoal, navy, dark, deep
-- **Earth** — olive, brown, beige, sand, cream, tan, khaki, terracotta, rust, grey, white
+| Category | Colors |
+|----------|--------|
+| **Bold** | red, blue, green, yellow, orange, purple, pink, teal, emerald, coral, mustard, etc. |
+| **Dark** | black, charcoal, navy, deep |
+| **Earth** | olive, brown, beige, sand, cream, tan, khaki, terracotta, rust, grey, white |
 
-Based on the count of bold pieces it applies these rules:
+### Balance Rules
 
-- 3+ bold pieces → flagged, too many loud colors
-- 2 bold pieces + dark outer layer → Pointing Down applied, balanced
-- 2 bold pieces + no dark layer → flagged, needs grounding
-- 1 bold piece + dark layer → Pointing Down working
-- 1 bold piece + no dark layer → flagged, treat as Point accent on neutral base
-- All earth/dark/neutral → good to go
+- **3+ bold pieces** → ⚠️ Flagged (too many loud colors)
+- **2 bold + dark outer** → ✅ Pointing Down applied (balanced)
+- **2 bold + no dark** → ⚠️ Flagged (needs grounding)
+- **1 bold + dark outer** → ✅ Pointing Down working
+- **1 bold + no dark** → ⚠️ Point accent on neutral base
+- **All earth/dark/neutral** → ✅ Good to go
 
-## Korean fashion concepts used
+## 👗 Korean Fashion Concepts
 
 | Concept | Description |
-|---|---|
-| Tone on Tone | Same color family, different saturation levels |
-| Tone in Tone | Different colors at the same saturation |
-| Point | One accent piece on an otherwise neutral outfit |
-| Go | Effortless — looks put together without trying hard |
-| Pan | Occasional unexpected style shift that surprises |
-| Pointing Down | Pairing bold colors with dark tones to ground them |
-| WI (Wit) | Subtle, playful contrast — formal + casual mix |
-| Damin Look | Minimalist Korean boyfriend aesthetic — basics only |
+|---------|-------------|
+| **Tone on Tone** | Same color family, different saturation levels |
+| **Tone in Tone** | Different colors at same saturation |
+| **Point** | One accent piece on otherwise neutral outfit |
+| **Go** | Effortless — looks put together without trying |
+| **Pan** | Occasional unexpected style shift |
+| **Pointing Down** | Bold colors paired with dark tones for grounding |
+| **WI (Wit)** | Subtle playful contrast — formal + casual mix |
+| **Damin Look** | Minimalist Korean boyfriend aesthetic — basics only |
 
-## Built with
+## 🛠️ Tech Stack
 
-- HTML, CSS, JavaScript — no frameworks, no dependencies
-- Runs entirely in the browser as a single file
+- **Frontend**: HTML, CSS, JavaScript
+- **No frameworks or dependencies** — runs entirely in the browser as a single file
+- **Deployment**: GitHub Pages
 
-## Background
+## 📦 Development
 
-Built as a personal wardrobe planning tool based on Korean fashion principles. Designed around an earth tone palette with grey New Balance sneakers as the base.
+This monorepo uses `pnpm` for package management:
+
+```bash
+# Install dependencies
+pnpm install
+
+# Type checking
+pnpm run typecheck
+
+# Build all packages
+pnpm run build
+
+# Format code
+pnpm exec prettier --write .
+```
+
+### CI/CD
+
+The repository includes GitHub Actions workflows for:
+- **Type checking** across Node 18 & 20
+- **Code formatting** validation with Prettier
+
+## 💡 Background
+
+Built as a personal wardrobe planning tool based on Korean fashion principles. Designed around an earth tone palette with grey New Balance sneakers as the foundation piece.
+
+Perfect for:
+- Planning outfits before building them IRL
+- Generating AI references with Leonardo AI
+- Learning Korean fashion styling concepts
+- Quick color harmony checks
+
+## 📄 License
+
+This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
+
+## 🔗 Links
+
+- **Live Demo**: https://farjarr.github.io/Wardrobe-Matrix/
+- **Repository**: https://github.com/Farjarr/Wardrobe-Matrix

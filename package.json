@@ -1,22 +1,9 @@
 {
-  "name": "workspace",
-  "version": "0.0.0",
-  "license": "MIT",
-{
   "name": "wardrobe-matrix",
   "private": true,
   "scripts": {
     "typecheck": "pnpm -r --if-present run typecheck",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "build:vercel": "PORT=3000 BASE_PATH=/ pnpm --filter @workspace/wardrobe-pwa run build"
-  },
-  "devDependencies": {
-    "typescript": "^5.0.0"
-  }
-}
-  "private": true,
-  "devDependencies": {
-    "typescript": "~5.9.2",
-    "prettier": "^3.8.1"
   }
 }

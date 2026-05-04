@@ -1,5 +1,5 @@
 {
-  "buildCommand": "PORT=3000 BASE_PATH=/ pnpm --filter wardrobe-pwa run build && cp -r artifacts/wardrobe-pwa/dist ./dist",
+  "buildCommand": "PORT=3000 BASE_PATH=/ pnpm --filter wardrobe-pwa run build && cp -r /vercel/path0/artifacts/wardrobe-pwa/dist /vercel/path0/dist",
   "outputDirectory": "dist",
   "installCommand": "pnpm install --frozen-lockfile"
 }

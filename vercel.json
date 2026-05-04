@@ -1,6 +1,5 @@
 {
-  "outputDirectory": ".",
-  "rewrites": [
-    { "source": "/", "destination": "/wardrobe-matrix-v5.html" }
-  ]
+  "buildCommand": "cd artifacts/wardrobe-pwa && pnpm install && pnpm run build",
+  "outputDirectory": "artifacts/wardrobe-pwa/dist",
+  "installCommand": "pnpm install --frozen-lockfile"
 }

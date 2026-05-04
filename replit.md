@@ -25,3 +25,18 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+
+## Artifacts
+
+### Wardrobe PWA (`artifacts/wardrobe-pwa`)
+- React + Vite app served at `/wardrobe-pwa/`
+- Port: 25941
+- Full wardrobe outfit builder ported from `wardrobe-matrix-v6.html`
+- PWA: `public/manifest.json`, `public/sw.js` (cache-first service worker), `public/icon.svg`
+- `index.html` has full PWA meta tags (manifest link, apple-mobile-web-app-capable, theme-color)
+- Service worker registered in `src/main.tsx` via `import.meta.env.BASE_URL + 'sw.js'`
+- All wardrobe CSS in `src/wardrobe.css` (unlayered, overrides Tailwind base layer)
+- Key files: `src/App.tsx` (all logic), `src/wardrobe.css` (all styles)
+
+### Standalone HTML (`wardrobe-matrix-v6.html`)
+- Original standalone HTML file — write via Python bash only (write tool truncates >200 lines)

@@ -1,0 +1,19 @@
+{
+  "name": "Wardrobe Matrix",
+  "short_name": "Wardrobe",
+  "description": "Build balanced outfits with color theory and the Pointing Down principle.",
+  "start_url": "/wardrobe-pwa/",
+  "scope": "/wardrobe-pwa/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f4f0",
+  "theme_color": "#7c6f4a",
+  "icons": [
+    {
+      "src": "/wardrobe-pwa/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

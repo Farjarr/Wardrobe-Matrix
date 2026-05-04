@@ -11,28 +11,6 @@
 
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    
-    ```
-
-### 5. Why we are doing this
-GitHub Pages is like a waiter at a restaurant. If you don't tell it otherwise, it looks for a "menu" named `index.html` in the **main front door** (the Root folder). If you put your code inside `artifacts`, the waiter can't find it, and your website will be a blank "404 Error" page.
-
-
-
-### Summary of your Main Folder (`Wardrobe-Builder`):
-Make sure these 4 files are sitting together in the main folder:
-1.  **`index.html`** (Your actual tool code)
-2.  **`manifest.json`**
-3.  **`sw.js`**
-4.  **`icon.svg`**
-
-**Once they are all together in that one folder, run your Git commands:**
-```bash
-git add .
-git commit -m "Final PWA setup in root"
-git push origin main<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wardrobe Matrix</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #f5f4f0; font-family: 'DM Sans', system-ui, sans-serif; padding: 32px 16px; min-height: 100vh; }

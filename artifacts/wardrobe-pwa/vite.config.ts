@@ -55,8 +55,14 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname),
   build: {
-   outDir: path.resolve(import.meta.dirname, "..", "..", "dist"),
-    emptyOutDir: true,
+  export default defineConfig({
+  // ... other config
+  build: {
+    // Change this to stay local to the package
+    outDir: "dist", 
+    
+    // Ensure it clears the folder before building
+    emptyOutDir: true, 
   },
   server: {
     port,

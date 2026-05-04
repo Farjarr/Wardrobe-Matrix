@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "pnpm -w run build:vercel",
-  "outputDirectory": "dist",
+  "buildCommand": "pnpm -w run build:vercel && ls -R artifacts/wardrobe-pwa/dist",
+  "outputDirectory": "artifacts/wardrobe-pwa/dist",
   "installCommand": "pnpm install --no-frozen-lockfile && pnpm add -w vite-plugin-pwa",
   "framework": "vite"
 }

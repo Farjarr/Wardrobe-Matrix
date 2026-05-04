@@ -129,6 +129,21 @@
 
   .placeholder { font-size: 13px; color: #bbb; padding: 8px 0; }
   .placeholder span { display: block; font-size: 11px; color: #ccc; margin-top: 4px; }
+
+  .randomize-row {
+    display: flex; justify-content: flex-end; margin-bottom: 24px;
+  }
+  .randomize-btn {
+    background: #f5f4f0; border: 1px solid rgba(0,0,0,0.14); border-radius: 8px;
+    padding: 9px 18px; font-size: 12px; font-weight: 500; color: #444;
+    cursor: pointer; font-family: 'DM Sans', system-ui, sans-serif;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .randomize-btn:hover { background: #ede9e0; border-color: rgba(0,0,0,0.22); }
+  .randomize-btn:active { transform: scale(0.97); }
+  .randomize-btn.spinning .dice { display: inline-block; animation: spin 0.35s ease; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
 </head>
@@ -243,6 +258,13 @@
 
   <hr class="divider">
 
+  <!-- RANDOMIZE -->
+  <div class="randomize-row">
+    <button class="randomize-btn" id="randomize-btn" onclick="randomizeOutfit()">
+      <span class="dice">&#9861;</span> Surprise me
+    </button>
+  </div>
+
   <!-- RESULT -->
   <div class="result-area" id="result">
     <div class="placeholder">Your outfit will appear here<span>Select an inner top + bottom to start</span></div>
@@ -276,6 +298,11 @@
     'White tee|Sand structured shirt|Dark grey trousers': 'Pan — sharp layer',
     'Sand structured shirt|None|Dark grey trousers': 'Pan — standalone sharp',
   };
+
+  // Preset options used by the randomizer — mirrors the cards in the HTML
+  const PRESET_INNER  = ['White tee', 'Cream tee', 'Black tee', 'Sand structured shirt'];
+  const PRESET_OUTER  = ['Cream linen shirt', 'Washed brown overshirt', 'Beige textured overshirt', 'None'];
+  const PRESET_BOTTOM = ['Olive chinos', 'Olive straight trousers', 'Dark olive trousers', 'Dark grey trousers', 'Black straight jeans'];
 
   function otherInput(group, val) {
     otherVals[group] = val;
@@ -312,9 +339,78 @@
     render();
   }
 
+  // Highlight a preset card by group + value without triggering selectCard
+  function highlightCard(group, val) {
+    document.querySelectorAll('[data-group="' + group + '"]').forEach(c => {
+      c.classList.toggle('selected', c.dataset.val === val);
+    });
+    // Clear any "Other" input for this group
+    const inputEl = document.getElementById('other-' + group);
+    if (inputEl) { inputEl.style.borderColor = ''; inputEl.value = ''; }
+    otherVals[group] = '';
+  }
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // Returns all combos of inner × outer × bottom as a shuffled array
+  function allCombos() {
+    const out = [];
+    for (const i of PRESET_INNER)
+      for (const o of PRESET_OUTER)
+        for (const b of PRESET_BOTTOM)
+          out.push({ inner: i, outer: o, bottom: b });
+    return shuffle(out);
+  }
+
+  function randomizeOutfit() {
+    const btn = document.getElementById('randomize-btn');
+    btn.classList.add('spinning');
+    setTimeout(() => btn.classList.remove('spinning'), 380);
+
+    // Save shoe/sock/acc so randomize only touches inner/outer/bottom
+    const savedShoe = state.shoe;
+    const savedSock = state.sock;
+    const savedAcc  = state.acc;
+
+    // Try combos in shuffled order; pick the first balanced one
+    const combos = allCombos();
+    let chosen = null;
+    for (const c of combos) {
+      state.inner  = c.inner;
+      state.outer  = c.outer;
+      state.bottom = c.bottom;
+      state.shoe   = savedShoe;
+      if (checkBalance().ok) { chosen = c; break; }
+    }
+
+    // Fallback: if no balanced combo found (shouldn't happen), just use the last tried
+    if (!chosen) chosen = combos[0];
+
+    state.inner  = chosen.inner;
+    state.outer  = chosen.outer;
+    state.bottom = chosen.bottom;
+    state.shoe   = savedShoe;
+    state.sock   = savedSock;
+    state.acc    = savedAcc;
+
+    highlightCard('inner',  chosen.inner);
+    highlightCard('outer',  chosen.outer);
+    highlightCard('bottom', chosen.bottom);
+
+    render();
+  }
+
   // --- COLOR ARRAYS ---
-  // FIX: "white" moved out of EARTH_COLORS into NEUTRAL_COLORS so it never
-  // triggers earth-tone logic or suppresses bold detection in other pieces.
+  // "white" lives in NEUTRAL_COLORS — not earth-toned, not bold
   const BOLD_COLORS = [
     'red','blue','green','yellow','orange','purple','pink',
     'teal','turquoise','cyan','aqua',
@@ -330,18 +426,15 @@
     'emerald','jade',
     'ultramarine'
   ];
-  const DARK_COLORS  = ['black','dark','charcoal','navy','deep'];
-  const EARTH_COLORS = ['olive','brown','beige','sand','cream','tan','khaki','terracotta','rust','camel','warm','grey','gray'];
-  // FIX: white/ivory are neutral — safe but not earth-toned
+  const DARK_COLORS    = ['black','dark','charcoal','navy','deep'];
+  const EARTH_COLORS   = ['olive','brown','beige','sand','cream','tan','khaki','terracotta','rust','camel','warm','grey','gray'];
   const NEUTRAL_COLORS = ['white','ivory','off-white'];
-  const ALL_KNOWN = [...BOLD_COLORS, ...DARK_COLORS, ...EARTH_COLORS, ...NEUTRAL_COLORS];
+  const ALL_KNOWN      = [...BOLD_COLORS, ...DARK_COLORS, ...EARTH_COLORS, ...NEUTRAL_COLORS];
 
   function detectColors(str) {
     if (!str) return [];
     const s = str.toLowerCase();
-    const found = [];
-    ALL_KNOWN.forEach(c => { if (s.includes(c)) found.push(c); });
-    return found;
+    return ALL_KNOWN.filter(c => s.includes(c));
   }
 
   function isRecognized(str) {
@@ -349,67 +442,57 @@
     return ALL_KNOWN.some(c => str.toLowerCase().includes(c));
   }
 
-  // FIX: isBold now correctly skips white/neutral — isRecognized returns true
-  // for white (it's in NEUTRAL_COLORS → ALL_KNOWN), so "White tee" is never
-  // treated as bold or unrecognized.
+  // Case-insensitive in all checks — "Olive Tee" works the same as "olive tee"
   function isBold(str) {
     if (!str) return false;
     if (BOLD_COLORS.some(c => str.toLowerCase().includes(c))) return true;
-    if (!isRecognized(str)) return true; // unrecognized free-text = assume bold for safety
+    if (!isRecognized(str)) return true; // unrecognized free-text treated as bold for safety
     return false;
   }
   function isDark(str)    { return !!str && DARK_COLORS.some(c => str.toLowerCase().includes(c)); }
   function isEarth(str)   { return !!str && EARTH_COLORS.some(c => str.toLowerCase().includes(c)); }
-  // FIX: dedicated isNeutral for white/ivory — used in balance + concept checks
   function isNeutral(str) { return !!str && NEUTRAL_COLORS.some(c => str.toLowerCase().includes(c)); }
   function isSafe(str)    { return isEarth(str) || isNeutral(str) || isDark(str); }
 
   function getBoldPieces() {
     const pieces = [];
-    if (isBold(state.inner))  pieces.push({ label: 'inner top',    val: state.inner });
+    if (isBold(state.inner))  pieces.push({ label: 'inner top',   val: state.inner });
     if (isBold(state.outer) && state.outer && state.outer !== 'None')
-                              pieces.push({ label: 'outer layer',  val: state.outer });
-    if (isBold(state.bottom)) pieces.push({ label: 'bottom',       val: state.bottom });
-    // FIX: shoe free-text is checked consistently through the same isBold path
+                              pieces.push({ label: 'outer layer', val: state.outer });
+    if (isBold(state.bottom)) pieces.push({ label: 'bottom',      val: state.bottom });
     if (state.shoe && isBold(state.shoe))
-                              pieces.push({ label: 'shoes',        val: state.shoe });
+                              pieces.push({ label: 'shoes',       val: state.shoe });
     return pieces;
   }
 
-  // FIX: getConcept now reads actual color profile of each piece instead of
-  // falling back to "Layered earth tone" for any combo with an outer layer.
   function getConcept() {
     const i = state.inner, o = state.outer, b = state.bottom;
     const key = i + '|' + (o || 'None') + '|' + b;
     if (concepts[key]) return concepts[key];
 
     const hasOuter  = o && o !== 'None';
-    const iBold     = isBold(i),    iDark = isDark(i),    iEarth = isEarth(i), iNeutral = isNeutral(i);
-    const oBold     = hasOuter && isBold(o),  oDark = hasOuter && isDark(o),  oEarth = hasOuter && isEarth(o);
-    const bBold     = isBold(b),   bDark = isDark(b),    bEarth = isEarth(b);
+    const iBold = isBold(i), iDark = isDark(i), iEarth = isEarth(i), iNeutral = isNeutral(i);
+    const oBold = hasOuter && isBold(o), oDark = hasOuter && isDark(o), oEarth = hasOuter && isEarth(o);
+    const bBold = isBold(b), bDark = isDark(b), bEarth = isEarth(b);
 
-    // Bold combos
     if (iBold && oDark)           return 'Pointing Down — bold top grounded by dark layer';
     if (bBold && iDark)           return 'Pointing Down — bold bottom, dark top';
     if (iBold && !hasOuter)       return 'Bold statement — needs grounding';
     if (oBold && iDark)           return 'Reversed layer — bold outer, dark inner';
     if (iBold || bBold || oBold)  return 'Bold piece — check balance below';
 
-    // Dark combos
     if (iDark && bDark && !hasOuter) return 'All dark — needs a break';
     if (iDark && oEarth && bEarth)   return 'WI — dark inside, earth tones outside';
     if (iDark && oEarth)             return 'WI — contrast layer';
     if (iDark && bEarth)             return 'WI — dark top, earth bottom';
     if (iDark && bDark && hasOuter)  return 'Dark base — outer adds break';
 
-    // Neutral (white/ivory) combos
     if (iNeutral && bDark && !hasOuter) return 'Clean contrast — white and dark';
     if (iNeutral && bDark && hasOuter)  return 'White base, dark grounded, layered';
     if (iNeutral && bEarth && oEarth)   return 'Layered tone on tone';
     if (iNeutral && bEarth)             return 'White base, earth grounding';
     if (iNeutral && hasOuter && oEarth) return 'White + earth stack';
 
-    // Earth / tonal combos
     if (iEarth && oEarth && bEarth) return 'Full tonal earth stack';
     if (iEarth && oEarth)           return 'Tone on tone stack';
     if (iEarth && bEarth)           return 'Tone on tone';
@@ -419,17 +502,12 @@
     return 'Neutral base';
   }
 
-  // FIX: checkBalance now names the specific piece causing the problem in
-  // every warning. "Good to go" is only returned when all main pieces are
-  // confirmed safe (earth / neutral / dark). The boldCount===2 + non-dark
-  // outer bug is also corrected by evaluating all four piece slots uniformly.
   function checkBalance() {
     const o = state.outer;
-    const hasOuter = o && o !== 'None';
+    const hasOuter   = o && o !== 'None';
     const boldPieces = getBoldPieces();
     const boldCount  = boldPieces.length;
-
-    const boldNames = boldPieces.map(p => p.label + ' (' + p.val + ')');
+    const boldNames  = boldPieces.map(p => p.label + ' (' + p.val + ')');
 
     if (boldCount >= 3)
       return { ok: false, msg: 'Too many bold pieces — ' + boldNames.join(', ') + '. Keep one statement piece and neutralize the rest.' };
@@ -440,21 +518,16 @@
     if (boldCount === 2 && hasOuter && isDark(o))
       return { ok: true, msg: 'Pointing Down applied — dark layer balances ' + boldNames.join(' and ') + '.' };
 
-    // FIX: previously this fell through to earth-tone checks in certain cases
     if (boldCount === 2 && hasOuter && !isDark(o))
       return { ok: false, msg: boldNames.join(' and ') + ' are both bold — your outer layer (' + o + ') isn\'t dark enough to ground them. Swap it for black, charcoal, or navy.' };
 
     if (boldCount === 1) {
       const p = boldNames[0];
-      if (hasOuter && isDark(o))
-        return { ok: true, msg: 'Pointing Down working — dark outer layer grounds the ' + p + '.' };
-      if (!hasOuter)
-        return { ok: false, msg: p + ' is a bold piece — add a dark outer layer to apply Pointing Down, or swap it for a neutral.' };
-      if (hasOuter && !isDark(o))
-        return { ok: false, msg: p + ' is bold but your outer layer (' + o + ') isn\'t dark enough to ground it — try black, charcoal, or navy.' };
+      if (hasOuter && isDark(o))  return { ok: true,  msg: 'Pointing Down working — dark outer layer grounds the ' + p + '.' };
+      if (!hasOuter)              return { ok: false, msg: p + ' is a bold piece — add a dark outer layer to apply Pointing Down, or swap it for a neutral.' };
+      if (hasOuter && !isDark(o)) return { ok: false, msg: p + ' is bold but your outer layer (' + o + ') isn\'t dark enough to ground it — try black, charcoal, or navy.' };
     }
 
-    // No bold pieces — now check for other issues
     const i = state.inner, b = state.bottom;
 
     if (isDark(i) && isDark(b) && !hasOuter)
@@ -469,8 +542,6 @@
     if (isDark(i) && isEarth(o) && isEarth(b))
       return { ok: true, msg: 'WI contrast working — dark inside, warm earth tones outside.' };
 
-    // FIX: "good to go" only fires when ALL main pieces are confirmed safe;
-    // white/neutral counts as safe (not bold, not problematic).
     const mainPieces = [i, hasOuter ? o : null, b].filter(Boolean);
     const allSafe    = mainPieces.every(p => isSafe(p));
 
@@ -483,7 +554,6 @@
     if (allSafe)
       return { ok: true, msg: 'All pieces are neutral / earth / dark — combo looks balanced.' };
 
-    // Something wasn't recognized
     const unknown = [i, hasOuter ? o : null, b, state.shoe]
       .filter(p => p && p !== 'None' && !isRecognized(p));
     if (unknown.length)
@@ -493,12 +563,12 @@
   }
 
   function buildPrompt() {
-    const i = state.inner;
-    const o = state.outer && state.outer !== 'None' ? state.outer + ' worn open as overshirt,' : '';
-    const b = state.bottom;
+    const i    = state.inner;
+    const o    = state.outer && state.outer !== 'None' ? state.outer + ' worn open as overshirt,' : '';
+    const b    = state.bottom;
     const shoes = state.shoe || 'grey New Balance sneakers';
-    const sock = state.sock ? 'terracotta socks,' : '';
-    const acc = state.acc ? state.acc + ',' : '';
+    const sock  = state.sock ? 'terracotta socks,' : '';
+    const acc   = state.acc ? state.acc + ',' : '';
     return 'Full body, young Southeast Asian male, slim, ' +
       i + ', ' + o + ' ' + b + ', ' + shoes + ', ' + sock + ' ' + acc +
       ' Bali outdoor setting, natural light, earth tone street style, editorial photography, 35mm';
@@ -515,7 +585,7 @@
   }
 
   function render() {
-    const r = document.getElementById('result');
+    const r  = document.getElementById('result');
     const pa = document.getElementById('prompt-area');
 
     if (!state.inner || !state.bottom) {
@@ -524,10 +594,10 @@
       return;
     }
 
-    const outer = state.outer && state.outer !== 'None' ? state.outer : null;
+    const outer   = state.outer && state.outer !== 'None' ? state.outer : null;
     const concept = getConcept();
     const balance = checkBalance();
-    const shoes = state.shoe || 'Grey New Balance sneakers';
+    const shoes   = state.shoe || 'Grey New Balance sneakers';
 
     let html = '<div class="result-label">Your combo</div>';
     html += '<div class="outfit-row">';

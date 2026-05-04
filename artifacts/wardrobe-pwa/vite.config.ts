@@ -54,7 +54,7 @@ export default defineConfig({
     dedupe: ["react", "react-dom"],
   },
   root: path.resolve(import.meta.dirname),
-  build: {
+  build: 
   export default defineConfig({
   // ... other config
   build: {

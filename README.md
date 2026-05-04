@@ -16,7 +16,7 @@ An interactive outfit builder and color balance checker built with vanilla HTML,
 
 ## 🚀 Quick Start
 
-1. Open `index.html` in any browser — no setup or dependencies needed
+1. Open `farjarr.github.io/Wardrobe-Matrix/` in any browser — no setup or dependencies needed
 2. Select one piece per category, or type a custom piece in the Other field and hit **Use this**
 3. Your outfit combo, concept label, and balance check appear instantly
 4. Copy the Leonardo AI prompt to visualize the look

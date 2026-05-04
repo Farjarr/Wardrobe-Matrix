@@ -25,7 +25,7 @@ if (!basePath) {
     "BASE_PATH environment variable is required but was not provided.",
   );
 }
-
+});
 export default defineConfig({
   base: basePath,
   plugins: [

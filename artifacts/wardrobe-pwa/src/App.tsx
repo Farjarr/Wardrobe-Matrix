@@ -267,7 +267,7 @@ function SummaryPage({
 }) {
   const [copied, setCopied] = useState(false);
   const prompt = buildPrompt(outfit);
-  const checks = checkCompatibility(outfit);
+i m  const checks = checkCompatibility(outfit);
   const hasOuter = outfit.outerCat !== OUTER_NONE;
   const hasWarnings = checks.some((c) => c.status === 'warn');
 

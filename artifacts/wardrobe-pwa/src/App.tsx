@@ -50,11 +50,11 @@ const INITIAL_OUTFIT: Outfit = {
 };
 
 const OUTFIT_TYPE_OPTIONS: { key: OutfitTypeKey; label: string; desc: string }[] = [
-  { key: 'minimal', label: 'Minimal', desc: 'Clean, neutral tones' },
-  { key: 'smart_casual', label: 'Smart Casual', desc: 'Elevated everyday looks' },
-  { key: 'streetwear', label: 'Streetwear', desc: 'Bold & urban edge' },
-  { key: 'casual', label: 'Casual', desc: 'Relaxed & everyday' },
-  { key: 'summer', label: 'Summer', desc: 'Light pastels & breezy fits' },
+  { key: 'minimal',      label: 'Minimal',      desc: 'Clean, neutral tones' },
+  { key: 'smart_casual', label: 'Smart Casual',  desc: 'Elevated everyday looks' },
+  { key: 'streetwear',   label: 'Streetwear',    desc: 'Bold & urban edge' },
+  { key: 'casual',       label: 'Casual',         desc: 'Relaxed & everyday' },
+  { key: 'summer',       label: 'Summer',         desc: 'Light pastels & breezy fits' },
 ];
 
 const OUTER_NONE = 'none';
@@ -84,23 +84,34 @@ function getTotalSteps(outerCat: string): number {
 
 function getBackStep(step: Step, outfit: Outfit): Step {
   switch (step) {
-    case 'INNER_FIT': return 'OUTFIT_TYPE';
-    case 'INNER_ITEM': return 'INNER_FIT';
-    case 'COLOR': return 'INNER_ITEM';
-    case 'OUTER_CAT': return 'COLOR';
-    case 'OUTER_ITEM': return 'OUTER_CAT';
-    case 'BOTTOM_CAT': return outfit.outerCat === OUTER_NONE ? 'OUTER_CAT' : 'OUTER_ITEM';
-    case 'BOTTOM_ITEM': return 'BOTTOM_CAT';
+    case 'INNER_FIT':    return 'OUTFIT_TYPE';
+    case 'INNER_ITEM':   return 'INNER_FIT';
+    case 'COLOR':        return 'INNER_ITEM';
+    case 'OUTER_CAT':    return 'COLOR';
+    case 'OUTER_ITEM':   return 'OUTER_CAT';
+    case 'BOTTOM_CAT':   return outfit.outerCat === OUTER_NONE ? 'OUTER_CAT' : 'OUTER_ITEM';
+    case 'BOTTOM_ITEM':  return 'BOTTOM_CAT';
     case 'FOOTWEAR_CAT': return 'BOTTOM_ITEM';
-    case 'FOOTWEAR_ITEM': return 'FOOTWEAR_CAT';
-    case 'SUMMARY': return 'FOOTWEAR_ITEM';
-    default: return 'OUTFIT_TYPE';
+    case 'FOOTWEAR_ITEM':return 'FOOTWEAR_CAT';
+    case 'SUMMARY':      return 'FOOTWEAR_ITEM';
+    default:             return 'OUTFIT_TYPE';
   }
+}
+
+function buildPrompt(outfit: Outfit): string {
+  const vibe = formatKey(outfit.outfitType);
+  const inner = `${outfit.color} ${outfit.innerItem}`.toLowerCase();
+  const outer = outfit.outerCat !== OUTER_NONE
+    ? ` layered under a ${outfit.outerItem.toLowerCase()},`
+    : ',';
+  const bottom = outfit.bottomItem.toLowerCase();
+  const shoe = outfit.footwearItem.toLowerCase();
+  return `A ${vibe} look — ${inner}${outer} paired with ${bottom} and ${shoe}.`;
 }
 
 // ── Styles ──────────────────────────────────────────────────────────────────
 
-const page: React.CSSProperties = {
+const wizardPage: React.CSSProperties = {
   minHeight: '100vh',
   backgroundColor: '#f3f4f6',
   display: 'flex',
@@ -110,7 +121,7 @@ const page: React.CSSProperties = {
   fontFamily: "'Inter', system-ui, sans-serif",
 };
 
-const card: React.CSSProperties = {
+const wizardCard: React.CSSProperties = {
   backgroundColor: '#ffffff',
   width: '100%',
   maxWidth: '440px',
@@ -141,7 +152,7 @@ const subtitleStyle: React.CSSProperties = {
   marginBottom: '24px',
 };
 
-const progressBar: React.CSSProperties = {
+const progressBarWrap: React.CSSProperties = {
   display: 'flex',
   gap: '4px',
   marginBottom: '28px',
@@ -176,34 +187,12 @@ const backBtnStyle: React.CSSProperties = {
   textAlign: 'center',
 };
 
-const restartBtnStyle: React.CSSProperties = {
-  display: 'block',
-  width: '100%',
-  padding: '15px',
-  borderRadius: '14px',
-  border: 'none',
-  backgroundColor: '#111827',
-  color: '#ffffff',
-  fontSize: '15px',
-  fontWeight: 700,
-  cursor: 'pointer',
-  textAlign: 'center',
-};
-
-const summaryRowStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '10px 0',
-  borderBottom: '1px solid #f3f4f6',
-};
-
 const colorDotStyle = (color: string): React.CSSProperties => ({
-  width: '12px',
-  height: '12px',
+  width: '11px',
+  height: '11px',
   borderRadius: '50%',
   backgroundColor: color.toLowerCase(),
-  border: '1px solid #e5e7eb',
+  border: '1px solid rgba(0,0,0,.12)',
   display: 'inline-block',
   marginRight: '8px',
   verticalAlign: 'middle',
@@ -214,18 +203,13 @@ const colorDotStyle = (color: string): React.CSSProperties => ({
 
 function ProgressBar({ current, total }: { current: number; total: number }) {
   return (
-    <div style={progressBar}>
+    <div style={progressBarWrap}>
       {Array.from({ length: total }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            flex: 1,
-            height: '4px',
-            borderRadius: '4px',
-            backgroundColor: i + 1 < current ? '#111827' : i + 1 === current ? '#6b7280' : '#e5e7eb',
-            transition: 'background-color 0.3s',
-          }}
-        />
+        <div key={i} style={{
+          flex: 1, height: '4px', borderRadius: '4px',
+          backgroundColor: i + 1 < current ? '#111827' : i + 1 === current ? '#6b7280' : '#e5e7eb',
+          transition: 'background-color 0.3s',
+        }} />
       ))}
     </div>
   );
@@ -269,6 +253,117 @@ function ScrollList({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ── Summary (full-page) ───────────────────────────────────────────────────────
+
+function SummaryPage({
+  outfit,
+  onRestart,
+  onBack,
+}: {
+  outfit: Outfit;
+  onRestart: () => void;
+  onBack: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const prompt = buildPrompt(outfit);
+
+  const copy = () => {
+    navigator.clipboard.writeText(prompt).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const hasOuter = outfit.outerCat !== OUTER_NONE;
+
+  return (
+    <div className="wrap" style={{ paddingTop: '40px', paddingBottom: '60px' }}>
+      <p className="page-title">Your Outfit</p>
+      <p className="page-sub">{formatKey(outfit.outfitType)} · built with Wardrobe Builder</p>
+
+      {/* Result card */}
+      <div className="result-area">
+        <span className="result-label">Outfit Breakdown</span>
+
+        <div className="outfit-row">
+          <span className={`outfit-tag tag-inner`}>
+            <span style={colorDotStyle(outfit.color)} />
+            {outfit.color} {outfit.innerItem}
+          </span>
+          <span className="arrow">→</span>
+          {hasOuter ? (
+            <>
+              <span className="outfit-tag tag-outer">{outfit.outerItem}</span>
+              <span className="arrow">→</span>
+            </>
+          ) : (
+            <>
+              <span className="outfit-tag tag-other">No Outer Layer</span>
+              <span className="arrow">→</span>
+            </>
+          )}
+          <span className="outfit-tag tag-bottom">{outfit.bottomItem}</span>
+          <span className="arrow">→</span>
+          <span className="outfit-tag tag-shoe">{outfit.footwearItem}</span>
+        </div>
+
+        {/* Layer details */}
+        <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {[
+            { label: 'Vibe',        value: formatKey(outfit.outfitType) },
+            { label: 'Inner Fit',   value: formatKey(outfit.innerFit) },
+            { label: 'Color',       value: outfit.color },
+            { label: 'Outer Layer', value: hasOuter ? outfit.outerItem : 'None' },
+            { label: 'Bottoms',     value: outfit.bottomItem },
+            { label: 'Footwear',    value: outfit.footwearItem },
+          ].map(({ label, value }) => (
+            <div key={label} className="concept-row">
+              <span className="concept-label">{label}</span>
+              <span className="concept-badge">{value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Prompt area */}
+      <div className="prompt-area">
+        <div className="prompt-header">
+          <span className="result-label" style={{ marginBottom: 0 }}>Outfit Prompt</span>
+          <button className={`copy-btn${copied ? ' copied' : ''}`} onClick={copy}>
+            {copied ? '✓ Copied' : 'Copy'}
+          </button>
+        </div>
+        <p className="prompt-text">{prompt}</p>
+      </div>
+
+      {/* Actions */}
+      <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+        <button
+          onClick={onRestart}
+          style={{
+            flex: 1, padding: '13px', borderRadius: '12px', border: 'none',
+            backgroundColor: '#1a1a1a', color: '#fff', fontSize: '14px',
+            fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif",
+          }}
+        >
+          Build Another
+        </button>
+        <button
+          onClick={onBack}
+          style={{
+            padding: '13px 20px', borderRadius: '12px',
+            border: '1px solid rgba(0,0,0,.14)', backgroundColor: '#f5f4f0',
+            fontSize: '14px', fontWeight: 600, color: '#444', cursor: 'pointer',
+            fontFamily: "'DM Sans', system-ui, sans-serif",
+          }}
+        >
+          ← Back
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ─────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -278,20 +373,34 @@ export default function App() {
   const save = (update: Partial<Outfit>) =>
     setOutfit((prev) => ({ ...prev, ...update }));
 
+  const goBack = () => setStep(getBackStep(step, outfit));
+
+  const restart = () => {
+    setOutfit(INITIAL_OUTFIT);
+    setStep('OUTFIT_TYPE');
+  };
+
+  // Full-page summary breaks out of the wizard card
+  if (step === 'SUMMARY') {
+    return (
+      <SummaryPage
+        outfit={outfit}
+        onRestart={restart}
+        onBack={goBack}
+      />
+    );
+  }
+
   const currentNum = getStepNumber(step, outfit.outerCat);
   const totalNum = getTotalSteps(outfit.outerCat);
-
-  const goBack = () => setStep(getBackStep(step, outfit));
 
   const BackBtn = () => (
     <button style={backBtnStyle} onClick={goBack}>← Back</button>
   );
 
-  // ── Render each step ───────────────────────────────────────────────────────
-
   return (
-    <div style={page}>
-      <div style={card}>
+    <div style={wizardPage}>
+      <div style={wizardCard}>
         <p style={stepLabelStyle}>Step {currentNum} of {totalNum}</p>
         <h1 style={titleStyle}>Wardrobe Builder</h1>
         <ProgressBar current={currentNum} total={totalNum} />
@@ -301,15 +410,8 @@ export default function App() {
           <div>
             <p style={subtitleStyle}>What's the vibe?</p>
             {OUTFIT_TYPE_OPTIONS.map(({ key, label, desc }) => (
-              <OptionBtn
-                key={key}
-                label={label}
-                desc={desc}
-                onClick={() => {
-                  save({ outfitType: key });
-                  setStep('INNER_FIT');
-                }}
-              />
+              <OptionBtn key={key} label={label} desc={desc}
+                onClick={() => { save({ outfitType: key }); setStep('INNER_FIT'); }} />
             ))}
           </div>
         )}
@@ -320,14 +422,8 @@ export default function App() {
             <p style={subtitleStyle}>Choose your inner layer fit:</p>
             <ScrollList>
               {(Object.keys(wardrobe.inner_layer) as InnerLayerKey[]).map((fit) => (
-                <OptionBtn
-                  key={fit}
-                  label={formatKey(fit)}
-                  onClick={() => {
-                    save({ innerFit: fit, innerItem: '' });
-                    setStep('INNER_ITEM');
-                  }}
-                />
+                <OptionBtn key={fit} label={formatKey(fit)}
+                  onClick={() => { save({ innerFit: fit, innerItem: '' }); setStep('INNER_ITEM'); }} />
               ))}
             </ScrollList>
             <BackBtn />
@@ -340,14 +436,8 @@ export default function App() {
             <p style={subtitleStyle}>Pick a specific style:</p>
             <ScrollList>
               {wardrobe.inner_layer[outfit.innerFit as InnerLayerKey]?.map((item) => (
-                <OptionBtn
-                  key={item}
-                  label={item}
-                  onClick={() => {
-                    save({ innerItem: item });
-                    setStep('COLOR');
-                  }}
-                />
+                <OptionBtn key={item} label={item}
+                  onClick={() => { save({ innerItem: item }); setStep('COLOR'); }} />
               ))}
             </ScrollList>
             <BackBtn />
@@ -365,14 +455,8 @@ export default function App() {
             </p>
             <ScrollList>
               {getPrioritizedColors(outfit.outfitType as OutfitTypeKey).map((color) => (
-                <ColorBtn
-                  key={color}
-                  color={color}
-                  onClick={() => {
-                    save({ color });
-                    setStep('OUTER_CAT');
-                  }}
-                />
+                <ColorBtn key={color} color={color}
+                  onClick={() => { save({ color }); setStep('OUTER_CAT'); }} />
               ))}
             </ScrollList>
             <BackBtn />
@@ -385,42 +469,24 @@ export default function App() {
             <p style={subtitleStyle}>Add an outer layer:</p>
             <ScrollList>
               {(Object.keys(wardrobe.outer_layer) as OuterLayerKey[]).map((cat) => (
-                <OptionBtn
-                  key={cat}
-                  label={formatKey(cat)}
-                  onClick={() => {
-                    save({ outerCat: cat, outerItem: '' });
-                    setStep('OUTER_ITEM');
-                  }}
-                />
+                <OptionBtn key={cat} label={formatKey(cat)}
+                  onClick={() => { save({ outerCat: cat, outerItem: '' }); setStep('OUTER_ITEM'); }} />
               ))}
-              <OptionBtn
-                label="No Outer Layer"
-                desc="Go straight to bottoms"
-                onClick={() => {
-                  save({ outerCat: OUTER_NONE, outerItem: '' });
-                  setStep('BOTTOM_CAT');
-                }}
-              />
+              <OptionBtn label="No Outer Layer" desc="Go straight to bottoms"
+                onClick={() => { save({ outerCat: OUTER_NONE, outerItem: '' }); setStep('BOTTOM_CAT'); }} />
             </ScrollList>
             <BackBtn />
           </div>
         )}
 
-        {/* STEP 6: Outer Item (conditional) */}
+        {/* STEP 6: Outer Item */}
         {step === 'OUTER_ITEM' && (
           <div>
             <p style={subtitleStyle}>Choose a specific outer layer:</p>
             <ScrollList>
               {wardrobe.outer_layer[outfit.outerCat as OuterLayerKey]?.map((item) => (
-                <OptionBtn
-                  key={item}
-                  label={item}
-                  onClick={() => {
-                    save({ outerItem: item });
-                    setStep('BOTTOM_CAT');
-                  }}
-                />
+                <OptionBtn key={item} label={item}
+                  onClick={() => { save({ outerItem: item }); setStep('BOTTOM_CAT'); }} />
               ))}
             </ScrollList>
             <BackBtn />
@@ -433,14 +499,8 @@ export default function App() {
             <p style={subtitleStyle}>Choose your bottoms:</p>
             <ScrollList>
               {(Object.keys(wardrobe.bottom_layer) as BottomLayerKey[]).map((cat) => (
-                <OptionBtn
-                  key={cat}
-                  label={formatKey(cat)}
-                  onClick={() => {
-                    save({ bottomCat: cat, bottomItem: '' });
-                    setStep('BOTTOM_ITEM');
-                  }}
-                />
+                <OptionBtn key={cat} label={formatKey(cat)}
+                  onClick={() => { save({ bottomCat: cat, bottomItem: '' }); setStep('BOTTOM_ITEM'); }} />
               ))}
             </ScrollList>
             <BackBtn />
@@ -453,14 +513,8 @@ export default function App() {
             <p style={subtitleStyle}>Choose a specific style:</p>
             <ScrollList>
               {wardrobe.bottom_layer[outfit.bottomCat as BottomLayerKey]?.map((item) => (
-                <OptionBtn
-                  key={item}
-                  label={item}
-                  onClick={() => {
-                    save({ bottomItem: item });
-                    setStep('FOOTWEAR_CAT');
-                  }}
-                />
+                <OptionBtn key={item} label={item}
+                  onClick={() => { save({ bottomItem: item }); setStep('FOOTWEAR_CAT'); }} />
               ))}
             </ScrollList>
             <BackBtn />
@@ -473,14 +527,8 @@ export default function App() {
             <p style={subtitleStyle}>Choose your footwear type:</p>
             <ScrollList>
               {(Object.keys(wardrobe.footwear) as FootwearKey[]).map((cat) => (
-                <OptionBtn
-                  key={cat}
-                  label={formatKey(cat)}
-                  onClick={() => {
-                    save({ footwearCat: cat, footwearItem: '' });
-                    setStep('FOOTWEAR_ITEM');
-                  }}
-                />
+                <OptionBtn key={cat} label={formatKey(cat)}
+                  onClick={() => { save({ footwearCat: cat, footwearItem: '' }); setStep('FOOTWEAR_ITEM'); }} />
               ))}
             </ScrollList>
             <BackBtn />
@@ -493,55 +541,10 @@ export default function App() {
             <p style={subtitleStyle}>Choose a specific pair:</p>
             <ScrollList>
               {wardrobe.footwear[outfit.footwearCat as FootwearKey]?.map((item) => (
-                <OptionBtn
-                  key={item}
-                  label={item}
-                  onClick={() => {
-                    save({ footwearItem: item });
-                    setStep('SUMMARY');
-                  }}
-                />
+                <OptionBtn key={item} label={item}
+                  onClick={() => { save({ footwearItem: item }); setStep('SUMMARY'); }} />
               ))}
             </ScrollList>
-            <BackBtn />
-          </div>
-        )}
-
-        {/* STEP 11: Summary */}
-        {step === 'SUMMARY' && (
-          <div>
-            <p style={subtitleStyle}>Your complete outfit:</p>
-            <div style={{ marginBottom: '24px' }}>
-              {[
-                { label: 'Vibe', value: formatKey(outfit.outfitType) },
-                { label: 'Inner Layer', value: outfit.innerItem },
-                { label: 'Color', value: outfit.color },
-                ...(outfit.outerCat !== OUTER_NONE
-                  ? [{ label: 'Outer Layer', value: outfit.outerItem }]
-                  : [{ label: 'Outer Layer', value: 'None' }]),
-                { label: 'Bottoms', value: outfit.bottomItem },
-                { label: 'Footwear', value: outfit.footwearItem },
-              ].map(({ label, value }) => (
-                <div key={label} style={summaryRowStyle}>
-                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>{label}</span>
-                  <span style={{ fontSize: '14px', color: '#111827', fontWeight: 700, textAlign: 'right', maxWidth: '60%' }}>
-                    {label === 'Color' && (
-                      <span style={colorDotStyle(value)} />
-                    )}
-                    {value}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <button
-              style={restartBtnStyle}
-              onClick={() => {
-                setOutfit(INITIAL_OUTFIT);
-                setStep('OUTFIT_TYPE');
-              }}
-            >
-              Build Another Outfit
-            </button>
             <BackBtn />
           </div>
         )}

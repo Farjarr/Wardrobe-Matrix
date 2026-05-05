@@ -39,5 +39,9 @@ externalPort = 80
 localPort = 25941
 externalPort = 3000
 
+[[ports]]
+localPort = 25942
+externalPort = 3003
+
 [nix]
 packages = ["psmisc"]

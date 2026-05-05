@@ -9,6 +9,7 @@ import {
   type BottomLayerKey,
   type FootwearKey,
 } from './wardrobe-data';
+import { checkCompatibility } from './compatibility';
 
 type Step =
   | 'OUTFIT_TYPE'
@@ -266,6 +267,9 @@ function SummaryPage({
 }) {
   const [copied, setCopied] = useState(false);
   const prompt = buildPrompt(outfit);
+  const checks = checkCompatibility(outfit);
+  const hasOuter = outfit.outerCat !== OUTER_NONE;
+  const hasWarnings = checks.some((c) => c.status === 'warn');
 
   const copy = () => {
     navigator.clipboard.writeText(prompt).then(() => {
@@ -273,8 +277,6 @@ function SummaryPage({
       setTimeout(() => setCopied(false), 2000);
     });
   };
-
-  const hasOuter = outfit.outerCat !== OUTER_NONE;
 
   return (
     <div className="wrap" style={{ paddingTop: '40px', paddingBottom: '60px' }}>
@@ -285,8 +287,9 @@ function SummaryPage({
       <div className="result-area">
         <span className="result-label">Outfit Breakdown</span>
 
+        {/* Outfit tag row */}
         <div className="outfit-row">
-          <span className={`outfit-tag tag-inner`}>
+          <span className="outfit-tag tag-inner">
             <span style={colorDotStyle(outfit.color)} />
             {outfit.color} {outfit.innerItem}
           </span>
@@ -307,7 +310,7 @@ function SummaryPage({
           <span className="outfit-tag tag-shoe">{outfit.footwearItem}</span>
         </div>
 
-        {/* Layer details */}
+        {/* Layer detail badges */}
         <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {[
             { label: 'Vibe',        value: formatKey(outfit.outfitType) },
@@ -323,6 +326,29 @@ function SummaryPage({
             </div>
           ))}
         </div>
+
+        {/* Divider */}
+        <hr className="divider" style={{ marginTop: '20px' }} />
+
+        {/* Compatibility feedback */}
+        <span className="result-label">Compatibility Check</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {checks.map((check, i) => (
+            <p
+              key={i}
+              className={`balance-msg ${check.status === 'ok' ? 'balance-ok' : 'balance-warn'}`}
+            >
+              {check.status === 'ok' ? '✓ ' : '⚠ '}
+              {check.message}
+            </p>
+          ))}
+        </div>
+
+        {hasWarnings && (
+          <p style={{ fontSize: '11px', color: '#bbb', marginTop: '10px' }}>
+            Warnings are suggestions — great outfits sometimes break the rules.
+          </p>
+        )}
       </div>
 
       {/* Prompt area */}

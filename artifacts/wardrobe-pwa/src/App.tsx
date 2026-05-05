@@ -1,271 +1,548 @@
 import { useState } from 'react';
+import {
+  wardrobe,
+  getPrioritizedColors,
+  formatKey,
+  type OutfitTypeKey,
+  type InnerLayerKey,
+  type OuterLayerKey,
+  type BottomLayerKey,
+  type FootwearKey,
+} from './wardrobe-data';
 
-type Step = 'INNER_BASE' | 'INNER_COLOR' | 'OUTER_TYPE' | 'SUMMARY';
+type Step =
+  | 'OUTFIT_TYPE'
+  | 'INNER_FIT'
+  | 'INNER_ITEM'
+  | 'COLOR'
+  | 'OUTER_CAT'
+  | 'OUTER_ITEM'
+  | 'BOTTOM_CAT'
+  | 'BOTTOM_ITEM'
+  | 'FOOTWEAR_CAT'
+  | 'FOOTWEAR_ITEM'
+  | 'SUMMARY';
 
 interface Outfit {
-  innerBase: string;
-  innerColor: string;
-  outerType: string;
+  outfitType: string;
+  innerFit: string;
+  innerItem: string;
+  color: string;
+  outerCat: string;
+  outerItem: string;
+  bottomCat: string;
+  bottomItem: string;
+  footwearCat: string;
+  footwearItem: string;
 }
 
 const INITIAL_OUTFIT: Outfit = {
-  innerBase: '',
-  innerColor: '',
-  outerType: '',
+  outfitType: '',
+  innerFit: '',
+  innerItem: '',
+  color: '',
+  outerCat: '',
+  outerItem: '',
+  bottomCat: '',
+  bottomItem: '',
+  footwearCat: '',
+  footwearItem: '',
 };
 
-const STEP_NUMBER: Record<Step, number> = {
-  INNER_BASE: 1,
-  INNER_COLOR: 2,
-  OUTER_TYPE: 3,
-  SUMMARY: 4,
+const OUTFIT_TYPE_OPTIONS: { key: OutfitTypeKey; label: string; desc: string }[] = [
+  { key: 'minimal', label: 'Minimal', desc: 'Clean, neutral tones' },
+  { key: 'smart_casual', label: 'Smart Casual', desc: 'Elevated everyday looks' },
+  { key: 'streetwear', label: 'Streetwear', desc: 'Bold & urban edge' },
+  { key: 'casual', label: 'Casual', desc: 'Relaxed & everyday' },
+  { key: 'summer', label: 'Summer', desc: 'Light pastels & breezy fits' },
+];
+
+const OUTER_NONE = 'none';
+
+const ALL_STEPS: Step[] = [
+  'OUTFIT_TYPE', 'INNER_FIT', 'INNER_ITEM', 'COLOR',
+  'OUTER_CAT', 'OUTER_ITEM', 'BOTTOM_CAT', 'BOTTOM_ITEM',
+  'FOOTWEAR_CAT', 'FOOTWEAR_ITEM', 'SUMMARY',
+];
+
+function getStepNumber(step: Step, outerCat: string): number {
+  if (outerCat === OUTER_NONE) {
+    const reduced: Step[] = [
+      'OUTFIT_TYPE', 'INNER_FIT', 'INNER_ITEM', 'COLOR',
+      'OUTER_CAT', 'BOTTOM_CAT', 'BOTTOM_ITEM',
+      'FOOTWEAR_CAT', 'FOOTWEAR_ITEM', 'SUMMARY',
+    ];
+    const i = reduced.indexOf(step);
+    return i === -1 ? ALL_STEPS.indexOf(step) + 1 : i + 1;
+  }
+  return ALL_STEPS.indexOf(step) + 1;
+}
+
+function getTotalSteps(outerCat: string): number {
+  return outerCat === OUTER_NONE ? 10 : 11;
+}
+
+function getBackStep(step: Step, outfit: Outfit): Step {
+  switch (step) {
+    case 'INNER_FIT': return 'OUTFIT_TYPE';
+    case 'INNER_ITEM': return 'INNER_FIT';
+    case 'COLOR': return 'INNER_ITEM';
+    case 'OUTER_CAT': return 'COLOR';
+    case 'OUTER_ITEM': return 'OUTER_CAT';
+    case 'BOTTOM_CAT': return outfit.outerCat === OUTER_NONE ? 'OUTER_CAT' : 'OUTER_ITEM';
+    case 'BOTTOM_ITEM': return 'BOTTOM_CAT';
+    case 'FOOTWEAR_CAT': return 'BOTTOM_ITEM';
+    case 'FOOTWEAR_ITEM': return 'FOOTWEAR_CAT';
+    case 'SUMMARY': return 'FOOTWEAR_ITEM';
+    default: return 'OUTFIT_TYPE';
+  }
+}
+
+// ── Styles ──────────────────────────────────────────────────────────────────
+
+const page: React.CSSProperties = {
+  minHeight: '100vh',
+  backgroundColor: '#f3f4f6',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '24px',
+  fontFamily: "'Inter', system-ui, sans-serif",
 };
 
-const s = {
-  page: {
-    minHeight: '100vh',
-    backgroundColor: '#f3f4f6',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '24px',
-    fontFamily: "'Inter', system-ui, sans-serif",
-  } as React.CSSProperties,
-  card: {
-    backgroundColor: '#ffffff',
-    width: '100%',
-    maxWidth: '420px',
-    borderRadius: '24px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-    padding: '36px 32px',
-  } as React.CSSProperties,
-  stepLabel: {
-    fontSize: '11px',
-    fontWeight: 700,
-    letterSpacing: '1.5px',
-    textTransform: 'uppercase' as const,
-    color: '#9ca3af',
-    marginBottom: '6px',
-  },
-  title: {
-    fontSize: '26px',
-    fontWeight: 800,
-    color: '#111827',
-    marginBottom: '6px',
-  },
-  subtitle: {
-    fontSize: '15px',
-    color: '#6b7280',
-    marginBottom: '28px',
-  },
-  progressBar: {
-    display: 'flex',
-    gap: '6px',
-    marginBottom: '32px',
-  },
-  progressSegment: (active: boolean, done: boolean) => ({
-    flex: 1,
-    height: '4px',
-    borderRadius: '4px',
-    backgroundColor: done ? '#111827' : active ? '#6b7280' : '#e5e7eb',
-    transition: 'background-color 0.3s',
-  } as React.CSSProperties),
-  optionBtn: {
-    display: 'block',
-    width: '100%',
-    textAlign: 'left' as const,
-    padding: '16px 20px',
-    marginBottom: '10px',
-    borderRadius: '14px',
-    border: '2px solid #e5e7eb',
-    backgroundColor: '#ffffff',
-    fontSize: '15px',
-    fontWeight: 700,
-    color: '#111827',
-    cursor: 'pointer',
-    transition: 'border-color 0.15s, background-color 0.15s',
-  } as React.CSSProperties,
-  optionBtnHover: {
-    borderColor: '#111827',
-    backgroundColor: '#f9fafb',
-  } as React.CSSProperties,
-  backBtn: {
-    display: 'block',
-    width: '100%',
-    border: 'none',
-    background: 'none',
-    color: '#9ca3af',
-    fontSize: '14px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    marginTop: '16px',
-    padding: '8px',
-    borderRadius: '8px',
-    textAlign: 'center' as const,
-  } as React.CSSProperties,
-  summaryBox: {
-    backgroundColor: '#f9fafb',
-    borderRadius: '16px',
-    padding: '24px',
-    marginBottom: '28px',
-    textAlign: 'center' as const,
-  } as React.CSSProperties,
-  summaryLabel: {
-    fontSize: '11px',
-    fontWeight: 700,
-    letterSpacing: '1.5px',
-    textTransform: 'uppercase' as const,
-    color: '#9ca3af',
-    marginBottom: '10px',
-  },
-  summaryText: {
-    fontSize: '20px',
-    fontWeight: 800,
-    color: '#111827',
-    lineHeight: '1.4',
-  },
-  restartBtn: {
-    display: 'block',
-    width: '100%',
-    padding: '16px',
-    borderRadius: '14px',
-    border: 'none',
-    backgroundColor: '#111827',
-    color: '#ffffff',
-    fontSize: '15px',
-    fontWeight: 700,
-    cursor: 'pointer',
-    textAlign: 'center' as const,
-  } as React.CSSProperties,
+const card: React.CSSProperties = {
+  backgroundColor: '#ffffff',
+  width: '100%',
+  maxWidth: '440px',
+  borderRadius: '24px',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+  padding: '36px 32px',
 };
 
-function ProgressBar({ current }: { current: number }) {
+const stepLabelStyle: React.CSSProperties = {
+  fontSize: '11px',
+  fontWeight: 700,
+  letterSpacing: '1.5px',
+  textTransform: 'uppercase',
+  color: '#9ca3af',
+  marginBottom: '4px',
+};
+
+const titleStyle: React.CSSProperties = {
+  fontSize: '24px',
+  fontWeight: 800,
+  color: '#111827',
+  marginBottom: '4px',
+};
+
+const subtitleStyle: React.CSSProperties = {
+  fontSize: '14px',
+  color: '#6b7280',
+  marginBottom: '24px',
+};
+
+const progressBar: React.CSSProperties = {
+  display: 'flex',
+  gap: '4px',
+  marginBottom: '28px',
+};
+
+const optBtnBase: React.CSSProperties = {
+  display: 'block',
+  width: '100%',
+  textAlign: 'left',
+  padding: '14px 18px',
+  marginBottom: '8px',
+  borderRadius: '14px',
+  border: '2px solid #e5e7eb',
+  backgroundColor: '#ffffff',
+  fontSize: '14px',
+  fontWeight: 600,
+  color: '#111827',
+  cursor: 'pointer',
+};
+
+const backBtnStyle: React.CSSProperties = {
+  display: 'block',
+  width: '100%',
+  border: 'none',
+  background: 'none',
+  color: '#9ca3af',
+  fontSize: '13px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  marginTop: '12px',
+  padding: '8px',
+  textAlign: 'center',
+};
+
+const restartBtnStyle: React.CSSProperties = {
+  display: 'block',
+  width: '100%',
+  padding: '15px',
+  borderRadius: '14px',
+  border: 'none',
+  backgroundColor: '#111827',
+  color: '#ffffff',
+  fontSize: '15px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  textAlign: 'center',
+};
+
+const summaryRowStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '10px 0',
+  borderBottom: '1px solid #f3f4f6',
+};
+
+const colorDotStyle = (color: string): React.CSSProperties => ({
+  width: '12px',
+  height: '12px',
+  borderRadius: '50%',
+  backgroundColor: color.toLowerCase(),
+  border: '1px solid #e5e7eb',
+  display: 'inline-block',
+  marginRight: '8px',
+  verticalAlign: 'middle',
+  flexShrink: 0,
+});
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function ProgressBar({ current, total }: { current: number; total: number }) {
   return (
-    <div style={s.progressBar}>
-      {[1, 2, 3, 4].map((n) => (
+    <div style={progressBar}>
+      {Array.from({ length: total }).map((_, i) => (
         <div
-          key={n}
-          style={s.progressSegment(n === current, n < current)}
+          key={i}
+          style={{
+            flex: 1,
+            height: '4px',
+            borderRadius: '4px',
+            backgroundColor: i + 1 < current ? '#111827' : i + 1 === current ? '#6b7280' : '#e5e7eb',
+            transition: 'background-color 0.3s',
+          }}
         />
       ))}
     </div>
   );
 }
 
-function OptionButton({
-  label,
-  onClick,
-}: {
-  label: string;
-  onClick: () => void;
-}) {
-  const [hovered, setHovered] = useState(false);
+function OptionBtn({ label, desc, onClick }: { label: string; desc?: string; onClick: () => void }) {
+  const [hov, setHov] = useState(false);
   return (
     <button
-      style={{ ...s.optionBtn, ...(hovered ? s.optionBtnHover : {}) }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      style={{ ...optBtnBase, borderColor: hov ? '#111827' : '#e5e7eb', backgroundColor: hov ? '#f9fafb' : '#fff' }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
       onClick={onClick}
     >
-      {label}
+      <span>{label}</span>
+      {desc && <span style={{ display: 'block', fontSize: '12px', color: '#9ca3af', fontWeight: 400, marginTop: '2px' }}>{desc}</span>}
     </button>
   );
 }
 
+function ColorBtn({ color, onClick }: { color: string; onClick: () => void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      style={{ ...optBtnBase, borderColor: hov ? '#111827' : '#e5e7eb', backgroundColor: hov ? '#f9fafb' : '#fff', display: 'flex', alignItems: 'center' }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      onClick={onClick}
+    >
+      <span style={colorDotStyle(color)} />
+      {color}
+    </button>
+  );
+}
+
+function ScrollList({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ maxHeight: '340px', overflowY: 'auto', paddingRight: '4px' }}>
+      {children}
+    </div>
+  );
+}
+
+// ── Main App ─────────────────────────────────────────────────────────────────
+
 export default function App() {
-  const [step, setStep] = useState<Step>('INNER_BASE');
+  const [step, setStep] = useState<Step>('OUTFIT_TYPE');
   const [outfit, setOutfit] = useState<Outfit>(INITIAL_OUTFIT);
 
-  const currentStep = STEP_NUMBER[step];
+  const save = (update: Partial<Outfit>) =>
+    setOutfit((prev) => ({ ...prev, ...update }));
 
-  const buildSummary = (o: Outfit) => {
-    const outer =
-      o.outerType === 'None'
-        ? 'no outer layer'
-        : `a ${o.outerType}`;
-    return `${o.innerColor} ${o.innerBase} T-Shirt with ${outer}`;
-  };
+  const currentNum = getStepNumber(step, outfit.outerCat);
+  const totalNum = getTotalSteps(outfit.outerCat);
+
+  const goBack = () => setStep(getBackStep(step, outfit));
+
+  const BackBtn = () => (
+    <button style={backBtnStyle} onClick={goBack}>← Back</button>
+  );
+
+  // ── Render each step ───────────────────────────────────────────────────────
 
   return (
-    <div style={s.page}>
-      <div style={s.card}>
-        <p style={s.stepLabel}>Step {currentStep} of 4</p>
-        <h1 style={s.title}>Wardrobe Builder</h1>
+    <div style={page}>
+      <div style={card}>
+        <p style={stepLabelStyle}>Step {currentNum} of {totalNum}</p>
+        <h1 style={titleStyle}>Wardrobe Builder</h1>
+        <ProgressBar current={currentNum} total={totalNum} />
 
-        <ProgressBar current={currentStep} />
-
-        {step === 'INNER_BASE' && (
+        {/* STEP 1: Outfit Type */}
+        {step === 'OUTFIT_TYPE' && (
           <div>
-            <p style={s.subtitle}>Choose your fit:</p>
-            {['Oversized', 'Regular Fit'].map((item) => (
-              <OptionButton
-                key={item}
-                label={item}
+            <p style={subtitleStyle}>What's the vibe?</p>
+            {OUTFIT_TYPE_OPTIONS.map(({ key, label, desc }) => (
+              <OptionBtn
+                key={key}
+                label={label}
+                desc={desc}
                 onClick={() => {
-                  setOutfit((prev) => ({ ...prev, innerBase: item }));
-                  setStep('INNER_COLOR');
+                  save({ outfitType: key });
+                  setStep('INNER_FIT');
                 }}
               />
             ))}
           </div>
         )}
 
-        {step === 'INNER_COLOR' && (
+        {/* STEP 2: Inner Fit Category */}
+        {step === 'INNER_FIT' && (
           <div>
-            <p style={s.subtitle}>Pick a color:</p>
-            {['White', 'Black', 'Grey'].map((color) => (
-              <OptionButton
-                key={color}
-                label={color}
-                onClick={() => {
-                  setOutfit((prev) => ({ ...prev, innerColor: color }));
-                  setStep('OUTER_TYPE');
-                }}
-              />
-            ))}
-            <button style={s.backBtn} onClick={() => setStep('INNER_BASE')}>
-              ← Back
-            </button>
+            <p style={subtitleStyle}>Choose your inner layer fit:</p>
+            <ScrollList>
+              {(Object.keys(wardrobe.inner_layer) as InnerLayerKey[]).map((fit) => (
+                <OptionBtn
+                  key={fit}
+                  label={formatKey(fit)}
+                  onClick={() => {
+                    save({ innerFit: fit, innerItem: '' });
+                    setStep('INNER_ITEM');
+                  }}
+                />
+              ))}
+            </ScrollList>
+            <BackBtn />
           </div>
         )}
 
-        {step === 'OUTER_TYPE' && (
+        {/* STEP 3: Inner Item */}
+        {step === 'INNER_ITEM' && (
           <div>
-            <p style={s.subtitle}>Add an outer layer:</p>
-            {['Jacket', 'Hoodie', 'None'].map((type) => (
-              <OptionButton
-                key={type}
-                label={type}
-                onClick={() => {
-                  setOutfit((prev) => ({ ...prev, outerType: type }));
-                  setStep('SUMMARY');
-                }}
-              />
-            ))}
-            <button style={s.backBtn} onClick={() => setStep('INNER_COLOR')}>
-              ← Back
-            </button>
+            <p style={subtitleStyle}>Pick a specific style:</p>
+            <ScrollList>
+              {wardrobe.inner_layer[outfit.innerFit as InnerLayerKey]?.map((item) => (
+                <OptionBtn
+                  key={item}
+                  label={item}
+                  onClick={() => {
+                    save({ innerItem: item });
+                    setStep('COLOR');
+                  }}
+                />
+              ))}
+            </ScrollList>
+            <BackBtn />
           </div>
         )}
 
+        {/* STEP 4: Color */}
+        {step === 'COLOR' && (
+          <div>
+            <p style={subtitleStyle}>
+              Pick a color{' '}
+              <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+                (prioritized for {formatKey(outfit.outfitType)})
+              </span>
+            </p>
+            <ScrollList>
+              {getPrioritizedColors(outfit.outfitType as OutfitTypeKey).map((color) => (
+                <ColorBtn
+                  key={color}
+                  color={color}
+                  onClick={() => {
+                    save({ color });
+                    setStep('OUTER_CAT');
+                  }}
+                />
+              ))}
+            </ScrollList>
+            <BackBtn />
+          </div>
+        )}
+
+        {/* STEP 5: Outer Layer Category */}
+        {step === 'OUTER_CAT' && (
+          <div>
+            <p style={subtitleStyle}>Add an outer layer:</p>
+            <ScrollList>
+              {(Object.keys(wardrobe.outer_layer) as OuterLayerKey[]).map((cat) => (
+                <OptionBtn
+                  key={cat}
+                  label={formatKey(cat)}
+                  onClick={() => {
+                    save({ outerCat: cat, outerItem: '' });
+                    setStep('OUTER_ITEM');
+                  }}
+                />
+              ))}
+              <OptionBtn
+                label="No Outer Layer"
+                desc="Go straight to bottoms"
+                onClick={() => {
+                  save({ outerCat: OUTER_NONE, outerItem: '' });
+                  setStep('BOTTOM_CAT');
+                }}
+              />
+            </ScrollList>
+            <BackBtn />
+          </div>
+        )}
+
+        {/* STEP 6: Outer Item (conditional) */}
+        {step === 'OUTER_ITEM' && (
+          <div>
+            <p style={subtitleStyle}>Choose a specific outer layer:</p>
+            <ScrollList>
+              {wardrobe.outer_layer[outfit.outerCat as OuterLayerKey]?.map((item) => (
+                <OptionBtn
+                  key={item}
+                  label={item}
+                  onClick={() => {
+                    save({ outerItem: item });
+                    setStep('BOTTOM_CAT');
+                  }}
+                />
+              ))}
+            </ScrollList>
+            <BackBtn />
+          </div>
+        )}
+
+        {/* STEP 7: Bottom Category */}
+        {step === 'BOTTOM_CAT' && (
+          <div>
+            <p style={subtitleStyle}>Choose your bottoms:</p>
+            <ScrollList>
+              {(Object.keys(wardrobe.bottom_layer) as BottomLayerKey[]).map((cat) => (
+                <OptionBtn
+                  key={cat}
+                  label={formatKey(cat)}
+                  onClick={() => {
+                    save({ bottomCat: cat, bottomItem: '' });
+                    setStep('BOTTOM_ITEM');
+                  }}
+                />
+              ))}
+            </ScrollList>
+            <BackBtn />
+          </div>
+        )}
+
+        {/* STEP 8: Bottom Item */}
+        {step === 'BOTTOM_ITEM' && (
+          <div>
+            <p style={subtitleStyle}>Choose a specific style:</p>
+            <ScrollList>
+              {wardrobe.bottom_layer[outfit.bottomCat as BottomLayerKey]?.map((item) => (
+                <OptionBtn
+                  key={item}
+                  label={item}
+                  onClick={() => {
+                    save({ bottomItem: item });
+                    setStep('FOOTWEAR_CAT');
+                  }}
+                />
+              ))}
+            </ScrollList>
+            <BackBtn />
+          </div>
+        )}
+
+        {/* STEP 9: Footwear Category */}
+        {step === 'FOOTWEAR_CAT' && (
+          <div>
+            <p style={subtitleStyle}>Choose your footwear type:</p>
+            <ScrollList>
+              {(Object.keys(wardrobe.footwear) as FootwearKey[]).map((cat) => (
+                <OptionBtn
+                  key={cat}
+                  label={formatKey(cat)}
+                  onClick={() => {
+                    save({ footwearCat: cat, footwearItem: '' });
+                    setStep('FOOTWEAR_ITEM');
+                  }}
+                />
+              ))}
+            </ScrollList>
+            <BackBtn />
+          </div>
+        )}
+
+        {/* STEP 10: Footwear Item */}
+        {step === 'FOOTWEAR_ITEM' && (
+          <div>
+            <p style={subtitleStyle}>Choose a specific pair:</p>
+            <ScrollList>
+              {wardrobe.footwear[outfit.footwearCat as FootwearKey]?.map((item) => (
+                <OptionBtn
+                  key={item}
+                  label={item}
+                  onClick={() => {
+                    save({ footwearItem: item });
+                    setStep('SUMMARY');
+                  }}
+                />
+              ))}
+            </ScrollList>
+            <BackBtn />
+          </div>
+        )}
+
+        {/* STEP 11: Summary */}
         {step === 'SUMMARY' && (
           <div>
-            <div style={s.summaryBox}>
-              <p style={s.summaryLabel}>Your Outfit</p>
-              <p style={s.summaryText}>{buildSummary(outfit)}</p>
+            <p style={subtitleStyle}>Your complete outfit:</p>
+            <div style={{ marginBottom: '24px' }}>
+              {[
+                { label: 'Vibe', value: formatKey(outfit.outfitType) },
+                { label: 'Inner Layer', value: outfit.innerItem },
+                { label: 'Color', value: outfit.color },
+                ...(outfit.outerCat !== OUTER_NONE
+                  ? [{ label: 'Outer Layer', value: outfit.outerItem }]
+                  : [{ label: 'Outer Layer', value: 'None' }]),
+                { label: 'Bottoms', value: outfit.bottomItem },
+                { label: 'Footwear', value: outfit.footwearItem },
+              ].map(({ label, value }) => (
+                <div key={label} style={summaryRowStyle}>
+                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>{label}</span>
+                  <span style={{ fontSize: '14px', color: '#111827', fontWeight: 700, textAlign: 'right', maxWidth: '60%' }}>
+                    {label === 'Color' && (
+                      <span style={colorDotStyle(value)} />
+                    )}
+                    {value}
+                  </span>
+                </div>
+              ))}
             </div>
             <button
-              style={s.restartBtn}
+              style={restartBtnStyle}
               onClick={() => {
                 setOutfit(INITIAL_OUTFIT);
-                setStep('INNER_BASE');
+                setStep('OUTFIT_TYPE');
               }}
             >
-              Start Over
+              Build Another Outfit
             </button>
-            <button style={s.backBtn} onClick={() => setStep('OUTER_TYPE')}>
-              ← Back
-            </button>
+            <BackBtn />
           </div>
         )}
       </div>
